@@ -23,7 +23,7 @@ class DBPipeline(object):
     def __init__(self):
         """This initializes a pipeline to the database."""
         dsn = ""
-        with open("dbAuth.txt") as auth:
+        with open("spider/dbAuth.txt") as auth:
             for line in auth:
                 dsn += line.strip()
 
@@ -53,7 +53,7 @@ class DBPipeline(object):
 
             spider.log("New product {id} added to product list".format(id=item["id"]), lg.INFO)
 
-        # Preparing for price update
+        # Getting SQL valid date string
         date = str(dt.datetime.now().date())
 
         # Checking if entry with same price and availability has already been made - more data efficient
@@ -62,17 +62,19 @@ class DBPipeline(object):
             f"""
             SELECT *
             FROM ppt_prices
-            WHERE product_id = '{item["id"]}'
+            WHERE product_id = {item["id"]}
             ORDER BY date DESC
             LIMIT 1;""",
             return_results=True
         )
 
         # If current values are different, adding entry
-        add_entry = len(df) == 0
+        add_entry = df.shape[0] == 0
         if not add_entry:
             add_entry = add_entry or not (
-                    df.iloc["price", 0] == item["price"] and df.iloc["available"] == item["available"])
+                    str(df["date"][0]) == date and
+                    df["price"][0] == item["price"] and
+                    df["available"][0] == item["available"])
 
         if add_entry:
             self.run_query(
@@ -84,7 +86,7 @@ class DBPipeline(object):
 
             spider.log("New price updated for Product {id}".format(id=item["id"]), lg.INFO)
 
-        # Finally returning the item object after processed through this pipeline.
+        # Finally, returning the item object after processed through this pipeline.
         return item
 
     def run_query(self, query, return_results=False):
