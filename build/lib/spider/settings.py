@@ -3,16 +3,8 @@ BOT_NAME = 'priceTracker'
 SPIDER_MODULES = ['spider.spiders']
 NEWSPIDER_MODULE = 'spider.spiders'
 
-#  Copyright © 2020 NeuroByte Tech. All rights reserved.
-#
-#  NeuroByte Tech is the Developer Company of Rohan Mathew.
-#
-#  Project: PriceTracker
-#  File Name: settings.py
-#  Last Modified: 11/05/2020, 19:59
-
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-USER_AGENT = 'MavicMaverick (+https://mavicmaverick.github.io/contact/)'
+USER_AGENT = 'Rohan Mathew (+https://bytesimal.github.io/contact/)'
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True

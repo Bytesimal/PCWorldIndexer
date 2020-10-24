@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-scrapy crawl priceTracker
+scrapy crawl shredderTracker

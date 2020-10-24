@@ -21,23 +21,17 @@ import pandas as pd
 
 class DBPipeline(object):
     def __init__(self):
-        """This initializes a pipeline to the database."""
-        dsn = ""
-        with open("spider/dbAuth.txt") as auth:
-            for line in auth:
-                dsn += line.strip()
-
-        self.conn = db.connect(dsn, "", "")
-        self.connection = dbi.Connection(self.conn)
+        self.conn = None
+        self.connection = None
 
     def process_item(self, item, spider):
         # Checking if product is already in database
         df = self.run_query(
-            f"""
+            """
             SELECT COUNT(*)
             FROM ppt_products p
-            WHERE p.id = {item["id"]};
-            """,
+            WHERE p.id = {};
+            """.format(item["id"]),
             return_results=True
         )
 
@@ -53,7 +47,7 @@ class DBPipeline(object):
 
             spider.log("New product {id} added to product list".format(id=item["id"]), lg.INFO)
 
-        # Preparing for price update
+        # Getting SQL valid date string
         date = str(dt.datetime.now().date())
 
         # Checking if entry with same price and availability has already been made - more data efficient
@@ -61,8 +55,8 @@ class DBPipeline(object):
         df = self.run_query(
             f"""
             SELECT *
-            FROM ppt_prices
-            WHERE product_id = {item["id"]}
+            FROM ppt_prices p
+            WHERE p.product_id = {item["id"]}
             ORDER BY date DESC
             LIMIT 1;""",
             return_results=True
@@ -86,7 +80,7 @@ class DBPipeline(object):
 
             spider.log("New price updated for Product {id}".format(id=item["id"]), lg.INFO)
 
-        # Finally returning the item object after processed through this pipeline.
+        # Finally, returning the item object after processed through this pipeline.
         return item
 
     def run_query(self, query, return_results=False):
@@ -100,26 +94,33 @@ class DBPipeline(object):
             db.exec_immediate(self.conn, query)
 
     def open_spider(self, spider):
+        # Init connection to db
+        dsn = ""
+        with open("spider/dbAuth.txt") as auth:
+            for line in auth:
+                dsn += line.strip()
+
+        self.conn = db.connect(dsn, "", "")
+        self.connection = dbi.Connection(self.conn)
         spider.log("Connected to product database", lg.INFO)
 
         # Creating necessary tables if not present already
         table_list = [table["TABLE_NAME"].lower()
                       for table in self.connection.tables("lzx36405")]
 
+        if "ppt_products" not in table_list:
+            db.exec_immediate(
+                self.conn,
+                """
+                CREATE TABLE ppt_products(
+                    id INT NOT NULL PRIMARY KEY,
+                    brand VARCHAR(50) NOT NULL,
+                    model VARCHAR(150) NOT NULL,
+                    url VARCHAR(1000) NOT NULL
+                );""")
+
+            spider.log("Added products database in absence", lg.INFO)
         if "ppt_prices" not in table_list:
-            if "ppt_products" not in table_list:
-                db.exec_immediate(
-                    self.conn,
-                    """
-                    CREATE TABLE ppt_products(
-                        id INT NOT NULL PRIMARY KEY,
-                        brand VARCHAR(50) NOT NULL,
-                        model VARCHAR(150) NOT NULL,
-                        url VARCHAR(1000) NOT NULL
-                    );""")
-
-                spider.log("Added products database in absence", lg.INFO)
-
             db.exec_immediate(
                 self.conn,
                 """
@@ -141,4 +142,5 @@ class DBPipeline(object):
             self.connection.close()
         except dbi.ProgrammingError:
             self.conn, self.connection = None, None
+
         spider.log("Closed database connection", lg.INFO)

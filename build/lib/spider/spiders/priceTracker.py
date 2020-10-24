@@ -3,7 +3,7 @@
 #  NeuroByte Tech is the Developer Company of Rohan Mathew.
 #
 #  Project: PriceTracker
-#  File Name: priceTracker.py
+#  File Name: shredderTracker.py
 #  Last Modified: 11/05/2020, 19:59
 
 import scrapy as sr
@@ -35,9 +35,9 @@ class PriceTrackerSpider(sr.Spider):
 
     @staticmethod
     def parse_product(response):
-        """Parses each product from the page and updates it on the databse"""
+        """Parses each product from the page"""
 
-        product_id = response.css("p.prd-code::text").extract_first()[14:]
+        product_id = int(response.css("p.prd-code::text").extract_first()[14:])
         full_name = response.css("img.product-image::attr(alt)").extract_first()
         brand = full_name.split()[0].strip()
         model = full_name[full_name.index(" ") + 1:]
